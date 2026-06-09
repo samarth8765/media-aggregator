@@ -1,12 +1,9 @@
 import { getBrowser, getContext } from "../browser";
 import { writeFile, mkdir } from "node:fs/promises";
-import type { LinkedInPost } from "../interface/linkedin.interface";
+import type { LinkedInPost } from "../interfaces/linkedin.interface";
 import { LINKEDIN_REACTION_PAGE_URL } from "../scapper.constant";
-
-async function humanDelay(min = 1000, max = 3000) {
-  const delay = min + Math.random() * (max - min);
-  await new Promise((r) => setTimeout(r, delay));
-}
+import { commonUtils } from "../utils/common.utils";
+import { ReactionEnum } from "../enums/linkedin.enum";
 
 export async function scrapeLinkedInLikes(): Promise<LinkedInPost[]> {
   const browser = await getBrowser();
@@ -20,7 +17,7 @@ export async function scrapeLinkedInLikes(): Promise<LinkedInPost[]> {
     timeout: 60000,
   });
 
-  await humanDelay(2000, 3000);
+  await commonUtils.delay(2000, 3000);
 
   const posts: LinkedInPost[] = [];
   let previousHeight = 0;
@@ -29,7 +26,6 @@ export async function scrapeLinkedInLikes(): Promise<LinkedInPost[]> {
   console.log("📜 Starting to scroll and collect posts...");
 
   while (noChangeCount < 3) {
-    // extract all currently visible posts
     const newPosts = await page.evaluate(() => {
       const items = document.querySelectorAll(
         ".profile-creator-shared-feed-update__container, .feed-shared-update-v2",
@@ -72,7 +68,7 @@ export async function scrapeLinkedInLikes(): Promise<LinkedInPost[]> {
           authorUrl: authorUrlEl?.href || null,
           content: contentEl?.textContent?.trim() || null,
           postUrl,
-          reactionType: "like", // default, hard to extract specific reaction type
+          reactionType: ReactionEnum.LIKE, // default, hard to extract specific reaction type
           scrapedAt: new Date().toISOString(),
         };
       });
@@ -95,7 +91,7 @@ export async function scrapeLinkedInLikes(): Promise<LinkedInPost[]> {
       return document.body.scrollHeight;
     });
 
-    await humanDelay(1500, 2500);
+    await commonUtils.delay(1500, 2500);
 
     if (currentHeight === previousHeight) {
       noChangeCount++;
